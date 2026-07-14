@@ -135,7 +135,6 @@ local ConfigSchema      = {
     { key = "AutoRerollAttribute", option = "AutoRerollAttribute" },
     { key = "AutoSaveStand",       option = "AutoSaveStand" },
     { key = "AutoHopServer",       option = "AutoHopServer" },
-    { key = "UIScale",             option = "UIScaleSlider" },
 }
 
 local Config            = {}
@@ -592,10 +591,6 @@ function Collection:KillThread(name)
 end
 
 function Collection:DisconnectAll()
-    -- stop config from saving while we force toggles off during unload,
-    -- otherwise SetValue(false) below would overwrite the saved file with false
-    Config.ready = false
-
     for name in pairs(Threads) do self:KillThread(name) end
     self:StopRejoinKick()
     self:StopAntiAFK()
@@ -615,7 +610,7 @@ Collection:RefreshPlayers()
 -- 6. UI
 --==================================================================
 local repo            = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
-local Library         = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local Library         = loadstring(game:HttpGet("https://raw.githubusercontent.com/xQuartyx/UILibrary/refs/heads/main/LinoriaLib/Library.lua"))()
 local ThemeManager    = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager     = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
@@ -895,7 +890,7 @@ MiscTab:AddButton({
 
 -- ---------- Ketchup tab ----------
 
-Environment.CurrentLevelKetchupLabel = KetchupGroupBox:AddLabel("Level : N/A → N/A")
+Environment.CurrentLevelKetchupLabel = KetchupGroupBox:AddLabel("Level : " .. CurrentLevel.Value .. " → " .. "N/A")
 Environment.TotalKetchupLabel = KetchupGroupBox:AddLabel("Total Ketchup : N/A" .. " 🥫")
 
 KetchupGroupBox:AddInput("AmountLevelTextBox", {
@@ -910,14 +905,12 @@ KetchupGroupBox:AddInput("AmountLevelTextBox", {
 KetchupGroupBox:AddButton({
     Text = "Calculate",
     Func = function()
-        -- ใส่ comma คั่นหลักพันให้อ่านง่าย
         local function comma(n)
             local s = tostring(math.floor(n))
             local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
             return (out:gsub("^,", ""))
         end
 
-        -- EXP ที่ต้องใช้ในแต่ละเลเวล L = (30 * 3 * (L * L / 10)) + 20  =  9*L^2 + 20
         local function expForLevel(L)
             return (30 * 3 * (L * L / 10)) + 20
         end
@@ -926,15 +919,14 @@ KetchupGroupBox:AddButton({
         local toLevel   = tonumber(Options.AmountLevelTextBox.Value)
 
         if not toLevel then
-            Library:Notify("ใส่เลเวลเป้าหมายก่อน", 3)
+            Library:Notify("Enter target level first", 3)
             return
         end
         if toLevel <= fromLevel then
-            Library:Notify("เลเวลเป้าหมายต้องมากกว่าเลเวลปัจจุบัน (" .. fromLevel .. ")", 4)
+            Library:Notify("Target level must be higher than current level (" .. fromLevel .. ")", 4)
             return
         end
 
-        -- รวม EXP จากเลเวลปัจจุบันถึงก่อนเลเวลเป้าหมาย
         local totalExp = 0
         for L = fromLevel, toLevel - 1 do
             totalExp = totalExp + expForLevel(L)
@@ -945,8 +937,7 @@ KetchupGroupBox:AddButton({
         Environment.CurrentLevelKetchupLabel:SetText(
             string.format("Level : %d → %d", fromLevel, toLevel))
         Environment.TotalKetchupLabel:SetText(
-            string.format("Total Ketchup : %s 🥫  (%s EXP)",
-                comma(totalKetchup), comma(totalExp)))
+            string.format("Total Ketchup : %s 🥫", comma(totalKetchup)))
     end,
     DoubleClick = false,
 })
@@ -1017,36 +1008,6 @@ local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu")
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "L", NoUI = false, Text = "Menu keybind" })
 Library.ToggleKeybind = Options.MenuKeybind
-
--- ===== Mobile: scale the whole UI uniformly =====
-local UserInputService = game:GetService("UserInputService")
-local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-
-local function applyUIScale(v)
-    local sg = Library.ScreenGui
-    if not sg then return end
-    local s = sg:FindFirstChild("__UIScale")
-    if not s then
-        s = Instance.new("UIScale")
-        s.Name = "__UIScale"
-        s.Parent = sg
-    end
-    s.Scale = v
-end
-
-MenuGroup:AddSlider("UIScaleSlider", {
-    Text = "UI Scale",
-    Default = isMobile and 0.7 or 1,
-    Min = 0.5,
-    Max = 1.2,
-    Rounding = 2,
-    Compact = false,
-    Tooltip = "ย่อ/ขยายทั้งเมนู (มือถือแนะนำ ~0.6-0.7)",
-    Callback = function(value) applyUIScale(value) end,
-})
-
--- apply once now (Config:Apply later will re-apply the saved value if any)
-applyUIScale(Options.UIScaleSlider.Value)
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
