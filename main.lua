@@ -789,7 +789,7 @@ app = cascade.New({
 window = app:Window({
   Title    = "Stand Upright: Rebooted",
   Subtitle = "by Songkranz",
-  Size     = UDim2.fromOffset(850, 530),
+  Size = UDim2.fromOffset(645, 530),
 })
 
 local minimizeKeybind = Enum.KeyCode.RightControl
@@ -1469,7 +1469,7 @@ end
 --==================================================================
 -- 7. UI — SETTINGS
 --==================================================================
-local settingsSection = window:Section({ Title = "Settings", Disclosure = true })
+local settingsSection = window:Section({ Title = "Settings", Disclosure = false })
 local settingsTab = settingsSection:Tab({ Title = "Settings", Icon = cascade.Symbols.gear })
 
 do
