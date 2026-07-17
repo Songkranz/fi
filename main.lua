@@ -708,6 +708,15 @@ function Auto:RerollStandLoop()
       continue
     end
 
+    -- ถ้าเปิด Auto 2x Orb คู่กัน: รอให้บัฟ DoubleArrowSpeed ติดก่อนค่อย reroll
+    --   • จะได้ reroll ทุกครั้งด้วยความเร็ว 3x (server delay เหลือ 30%)
+    --   • ตอนบัฟหมด loop นี้หยุดนิ่ง = ไม่แย่ง lock กับ 2x Orb loop
+    -- ถ้าไม่ได้เปิด 2x Orb ก็ reroll ตามปกติ ไม่ต้องรอ
+    if self.state.doubleOrb and not self:HasDoubleBuff() then
+      task.wait(0.3)
+      continue
+    end
+
     -- ได้ของที่ต้องการแล้ว
     if StandData.Value ~= "None" and matchesCombo(StandData.Value, AttriData.Value) then
       -- ถ้าเปิด auto save ไว้ ปล่อยให้ save จัดการ แล้ว reroll ต่อ
@@ -933,14 +942,19 @@ function Auto:DoubleOrbLoop()
     local orb = findDoubleOrb(char)
     if not orb then
       if not stillOn() then return end
+      -- เช็คซ้ำอีกทีหลังเว้นนาน — กันเคส loop อื่นกำลังย้าย tool อยู่พอดี
+      task.wait(1)
+      if findDoubleOrb(LocalPlayer.Character) then continue end
+      if not stillOn() then return end
       self:Stop("doubleOrb", "AutoDoubleOrb", "Out of 2x Orb")
       return
     end
 
     -- จอง lock ก่อน — กัน loop อื่นยิง UseItem ตอน 2x Orb อยู่บนตัว
+    -- (ตอนนี้ reroll stand ควรหยุดรอบัฟอยู่แล้ว คิวจึงไม่ควรยาว)
     if not self:AcquireUse(stillOn, 15) then
       if not stillOn() then return end
-      continue
+      continue   -- แค่รอคิว ไม่ใช่ของหมด — วนไปลองใหม่
     end
 
     -- equip 2x Orb ชั่วคราว โดยถอด tool อื่นออกก่อน
