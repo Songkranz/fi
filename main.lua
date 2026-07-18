@@ -61,24 +61,12 @@ end, 10)
 task.wait(0.5)
 
 -- กด Play
-task.spawn(function()
-    repeat
-        local menu = PlayerGui:FindFirstChild("MenuGUI")
+clickButton(function()
+  local menu = PlayerGui:FindFirstChild("MenuGUI")
+  return menu and menu:FindFirstChild("Play")
+end, 10)
 
-        local play = menu and menu:FindFirstChild("Play")
-
-        if play and play.Visible and play.Active then
-            pcall(function()
-                firesignal(play.MouseButton1Click)
-            end)
-            break
-        end
-
-        task.wait(0.25)
-    until false
-end)
-
-
+-- รอ inventory โหลด (มี timeout กันค้างถ้าโหลดไม่เสร็จ)
 do
   local itemsLoaded = LocalPlayer:FindFirstChild("ItemsLoaded")
   local t = os.clock()
@@ -441,7 +429,11 @@ local function matchesCombo(standName, attriName)
   return false
 end
 
-
+-- ---- reroll completion signal ----
+-- server ยิง notif ทุกครั้งที่ reroll เสร็จ (แม้ได้ attribute เดิม)
+--   v4:FireClient(plr, "🎲 Trait rerolled! You received: " .. attri)
+-- ใช้เป็นสัญญาณ "เสร็จแล้ว" ได้ ดีกว่ารอค่าเปลี่ยน เพราะถ้าสุ่มได้ค่าเดิม
+-- การรอค่าเปลี่ยนจะค้างจนครบ timeout เปล่าๆ
 Auto.rerollDone = false
 do
   local notif = Events:FindFirstChild("GeneralNotif")
@@ -1077,7 +1069,7 @@ app = cascade.New({
 window = app:Window({
   Title    = "Stand Upright: Rebooted",
   Subtitle = "by Songkranz",
-  Size = UDim2.fromOffset(645, 530),
+  Size     = UDim2.fromOffset(645, 530),
 })
 
 local minimizeKeybind = Enum.KeyCode.RightControl
