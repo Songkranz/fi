@@ -405,11 +405,14 @@ end
 -- ปิด toggle จากในโค้ด (อัปเดตทั้ง state และ UI)
 function Auto:Stop(key, toggleName, message)
   self.state[key] = false
-  local tgl = self.toggles[toggleName]
-  if tgl then pcall(function() tgl.Value = false end) end
+  -- BUG FIX: ยิง notification ก่อน set toggle เพราะ toggle.Value = false
+  -- ยิง ValueChanged synchronous -> KillThread(name) -> task.cancel thread ปัจจุบัน
+  -- (ถ้า Stop ถูกเรียกจากใน loop thread เอง) ทำให้โค้ดหลังจากนี้ไม่รันเลย
   if message then
     app:Notification({ Title = "Stopped", Subtitle = message, Duration = 4 })
   end
+  local tgl = self.toggles[toggleName]
+  if tgl then pcall(function() tgl.Value = false end) end
 end
 
 -- ---- webhook ----
